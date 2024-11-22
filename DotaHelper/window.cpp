@@ -7,6 +7,8 @@
 #include "win_hook.h"
 using namespace std;
 
+HWND hwnd = NULL; // Global hwnd variable
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_PAINT: {
@@ -15,7 +17,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         // Drawing a simple rectangle on the overlay
         HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0)); // Red color
-        RECT rect = { 50, 50, 200, 200 };
+        RECT rect = { 5, 5, 50, 50 };
         FillRect(hdc, &rect, brush);
         DeleteObject(brush);
 
@@ -38,13 +40,24 @@ void GetDesktopResolution(int& horizontal, int& vertical)
     vertical = desktop.bottom;
 }
 
+void OnWindowChange(const std::string& windowTitle) {
+    #ifdef _DEBUG
+        cout << endl << "[D] Active window changed to: " << windowTitle;
+    #endif
+    if (windowTitle == "Dota 2") {
+        ShowWindow(hwnd, SW_SHOW);
+    }
+    else {
+        ShowWindow(hwnd, SW_HIDE);
+    }
+}
+
 int RunWindow(HINSTANCE hInstance, int nCmdShow) {
 
-    if (!StartWinEventHook()) {
-        cout << "Failed to start event hook..." << endl;
+    if (!StartWinEventHook(OnWindowChange)) {
+        std::cerr << "Failed to start hook" << std::endl;
         return 1;
     }
-
 
     APP app;
     auto app_info = app_manager();
@@ -70,7 +83,7 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
 
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(
+    hwnd = CreateWindowEx(
         WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW, // Transparent, click-through, and not in ALT+TAB
         CLASS_NAME,
         wAppName.c_str(), // Title
@@ -97,7 +110,7 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
     COLORREF transparentColor = RGB(0, 0, 0); // Black as the transparent color
     SetLayeredWindowAttributes(hwnd, transparentColor, 0, LWA_COLORKEY);
 
-    ShowWindow(hwnd, nCmdShow);
+    ShowWindow(hwnd, SW_HIDE);
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0)) {
