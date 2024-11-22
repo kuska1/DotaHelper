@@ -40,7 +40,7 @@ bool StartWinEventHook(std::function<void(const std::string&)> callback) {
         WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
 
     if (!hWinEventHook) {
-        std::cerr << "Failed to set hook!" << std::endl;
+        std::cerr << "[!] Failed to set hook!" << std::endl;
         return false;
     }
     return true;

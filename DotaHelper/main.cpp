@@ -10,7 +10,7 @@ int main() {
     BUILD build;
     auto app_info = app_manager();
 
-    // Convert app_name to wide string
+    // Convert app_full to wide string
     SetConsoleTitle(std::wstring(app.app_full.begin(), app.app_full.end()).c_str());
 
     cout << endl;

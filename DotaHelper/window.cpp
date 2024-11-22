@@ -15,11 +15,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
 
-        // Drawing a simple rectangle on the overlay
-        HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0)); // Red color
-        RECT rect = { 5, 5, 50, 50 };
-        FillRect(hdc, &rect, brush);
-        DeleteObject(brush);
+        // Set up text properties
+        SetTextColor(hdc, RGB(255, 255, 255)); // White text color
+        SetBkMode(hdc, TRANSPARENT); // Transparent background for text
+
+        // Draw text
+        LPCWSTR text = L"Overlay Text Example!";
+        RECT textRect = { 50, 50, 500, 100 }; // Position for the text
+        DrawText(hdc, text, -1, &textRect, DT_SINGLELINE | DT_NOCLIP);
 
         EndPaint(hwnd, &ps);
         break;
@@ -55,7 +58,7 @@ void OnWindowChange(const std::string& windowTitle) {
 int RunWindow(HINSTANCE hInstance, int nCmdShow) {
 
     if (!StartWinEventHook(OnWindowChange)) {
-        std::cerr << "Failed to start hook" << std::endl;
+        std::cerr << "[!] Failed to start hook" << std::endl;
         return 1;
     }
 
@@ -68,8 +71,8 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
     //delete window_title;
     const wchar_t* CLASS_NAME = wAppName.c_str();
 
-    int* horizontal = new int[4];
-    int* vertical = new int[4];
+    int* horizontal = new int[1];
+    int* vertical = new int[1];
     *horizontal = 0;
     *vertical = 0;
     GetDesktopResolution(*horizontal, *vertical);
@@ -100,11 +103,11 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
         return 0;
     }
 
-    // Free ram
     delete horizontal, vertical;
 
     // Set the window to be always on top
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
 
     // Set transparency (alpha = 0 for fully transparent)
     COLORREF transparentColor = RGB(0, 0, 0); // Black as the transparent color
