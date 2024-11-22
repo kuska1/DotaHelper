@@ -130,11 +130,13 @@
     <ClCompile Include="app_manager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="window.cpp" />
+    <ClCompile Include="win_hook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app_manager.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="window.h" />
+    <ClInclude Include="win_hook.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\icon.ico" />

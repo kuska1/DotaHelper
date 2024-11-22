@@ -4,7 +4,7 @@
 #include <windows.h>
 #include "window.h"
 #include "resource.h"
-#include <tlhelp32.h>
+#include "win_hook.h"
 using namespace std;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -39,6 +39,13 @@ void GetDesktopResolution(int& horizontal, int& vertical)
 }
 
 int RunWindow(HINSTANCE hInstance, int nCmdShow) {
+
+    if (!StartWinEventHook()) {
+        cout << "Failed to start event hook..." << endl;
+        return 1;
+    }
+
+
     APP app;
     auto app_info = app_manager();
 
@@ -98,5 +105,6 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
         DispatchMessage(&msg);
     }
 
+    StopWinEventHook();
     return 0;
 }

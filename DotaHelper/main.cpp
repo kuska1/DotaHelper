@@ -21,8 +21,8 @@ int main() {
     cout << endl;
 
     #ifdef _DEBUG
-        cout << endl << "Mode: " << build.app_mode;
-        cout << endl << "Platform: x" << build.app_platform;
+        cout << endl << "[D] Mode: " << build.app_mode;
+        cout << endl << "[D] Platform: x" << build.app_platform;
     #endif
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
