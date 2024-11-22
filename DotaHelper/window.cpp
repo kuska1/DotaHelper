@@ -4,16 +4,29 @@
 #include <windows.h>
 #include "window.h"
 #include "resource.h"
+#include <tlhelp32.h>
 using namespace std;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+
+        // Drawing a simple rectangle on the overlay
+        HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0)); // Red color
+        RECT rect = { 50, 50, 200, 200 };
+        FillRect(hdc, &rect, brush);
+        DeleteObject(brush);
+
+        EndPaint(hwnd, &ps);
+        break;
+    }
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-    default:
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 void GetDesktopResolution(int& horizontal, int& vertical)
@@ -51,12 +64,12 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
     RegisterClass(&wc);
 
     HWND hwnd = CreateWindowEx(
-        WS_EX_LAYERED,
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW, // Transparent, click-through, and not in ALT+TAB
         CLASS_NAME,
-        wAppName.c_str(),
+        wAppName.c_str(), // Title
         WS_POPUP,
         0, 0,
-        *horizontal, *vertical,
+        *horizontal, *vertical, // 1920x1080
         NULL,
         NULL,
         hInstance,
@@ -67,6 +80,7 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
         return 0;
     }
 
+    // Free ram
     delete horizontal, vertical;
 
     // Set the window to be always on top
