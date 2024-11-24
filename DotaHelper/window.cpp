@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cctype>
 #include "app_manager.h"
@@ -9,47 +10,71 @@
 #include "win_hook.h"
 #include <thread>
 #include "server.h"
-#include <nlohmann/json.hpp>
-#include <locale>
-#include <codecvt>
+#include <nlohmann/json.hpp> // vckpg
+#include <map>
 using namespace std;
 
 using json = nlohmann::json;
 
 // Global data
 HWND hwnd = NULL;
+int FPSChange;
 int horizontal, vertical = 0;
 json json_data;
-bool first_paint = false;
 
 // Global var
+const string settings_file = "settings.json";
 wstring text_provider = L"...";
 int map_game_time, map_clock_time;
-string map_name, map_game_state = "lobby";
+string map_name, map_game_state = "lobby"; // States: DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP, DOTA_GAMERULES_STATE_HERO_SELECTION, DOTA_GAMERULES_STATE_STRATEGY_TIME, DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD, DOTA_GAMERULES_STATE_GAME_IN_PROGRESS, DOTA_GAMERULES_STATE_PRE_GAME
 int gold, gold_reliable, gold_unreliable, gold_from_hero_kills, gold_from_creep_kills, gold_from_income, gold_from_shared, gpm, xpm;
+
+// Global settings
+std::map<std::string, int> getDefaultSettings() {
+    return {
+        {"FPSGame", 24},
+        {"FPSLobby", 1}
+    };
+}
+
+json loadSettings(const std::string& filename) {
+    std::ifstream inFile(filename);
+    if (inFile) {
+        json j;
+        inFile >> j; // Читаем JSON из файла
+        return j;
+    }
+    else {
+        // Если файл не существует, создаем настройки по умолчанию
+        auto defaultSettings = getDefaultSettings();
+        json j = json::object();
+        for (const auto& pair : defaultSettings) {
+            j[pair.first] = pair.second; // Заполняем JSON значениями из словаря
+        }
+
+        std::ofstream outFile(filename);
+        if (outFile) {
+            outFile << j.dump(4); // Сохраняем настройки в файл
+        }
+        return j;
+    }
+}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     APP app;
     BUILD build;
+    json userSettings = loadSettings(settings_file);
     switch (uMsg) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
 
         // Clear
-        if (map_game_state != "lobby") {
-            RECT clientRect;
-            GetClientRect(hwnd, &clientRect);
-            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-            FillRect(hdc, &clientRect, hBrush);
-            DeleteObject(hBrush);
-        } else {
-            if (first_paint == false) {
-                first_paint = true;
-            } else {
-                break;
-            }
-        }
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hdc, &clientRect, hBrush);
+        DeleteObject(hBrush);
 
         // Set up text properties
         SetTextColor(hdc, RGB(255, 255, 255)); // White text color
@@ -59,60 +84,67 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         LPCWSTR text_build = build.wide_build_full.c_str();
         RECT textRect_build = { 5, vertical - 20 }; // Bottom left
         DrawText(hdc, text_build, -1, &textRect_build, DT_SINGLELINE | DT_NOCLIP);
+
         #ifdef _DEBUG
             RECT textRect_provider = { 5, vertical - 35 }; // Bottom left
             DrawText(hdc, text_provider.c_str(), -1, &textRect_provider, DT_SINGLELINE | DT_NOCLIP);
+            RECT textRect_game_state = { horizontal / 2 - map_game_state.length() * 4, vertical - 20}; // Bottom center
+            DrawText(hdc, wstring(map_game_state.begin(), map_game_state.end()).c_str(), -1, &textRect_game_state, DT_SINGLELINE | DT_NOCLIP);
+            RECT textRect_fps = { horizontal - 110, 40 }; // Top right
+            DrawText(hdc, (L"FPS Timer: " + to_wstring(FPSChange)).c_str(), -1, &textRect_fps, DT_SINGLELINE | DT_NOCLIP);
         #endif
 
         if (map_game_state != "lobby") {
             int gxx = 150;
             int gxy = 13;
-            if (map_name != "hero_demo_main") {
-                if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
-                    RECT textRect_gold = { gxx, gxy }; // Top left
-                    DrawText(hdc, (L"Gold: " + to_wstring(gold)).c_str(), -1, &textRect_gold, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_reliable = { gxx, gxy * 2 }; // Top left
-                    DrawText(hdc, (L"Reliable: " + to_wstring(gold_reliable)).c_str(), -1, &textRect_reliable, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_unreliable = { gxx, gxy * 3 }; // Top left
-                    DrawText(hdc, (L"Unreliable: " + to_wstring(gold_unreliable)).c_str(), -1, &textRect_unreliable, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_fhk = { gxx, gxy * 4 }; // Top left
-                    DrawText(hdc, (L"From hero kills: " + to_wstring(gold_from_hero_kills)).c_str(), -1, &textRect_fhk, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_fck = { gxx, gxy * 5 }; // Top left
-                    DrawText(hdc, (L"From creep kills: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_fck, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_income = { gxx, gxy * 6 }; // Top left
-                    DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_shared = { gxx, gxy * 7 }; // Top left
-                    DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
+            if (map_game_state == "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" || map_game_state == "DOTA_GAMERULES_STATE_PRE_GAME") {
+                if (map_name != "hero_demo_main") {
+                    if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
+                        RECT textRect_gold = { gxx, gxy }; // Top left
+                        DrawText(hdc, (L"Gold: " + to_wstring(gold)).c_str(), -1, &textRect_gold, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_reliable = { gxx, gxy * 2 }; // Top left
+                        DrawText(hdc, (L"Reliable: " + to_wstring(gold_reliable)).c_str(), -1, &textRect_reliable, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_unreliable = { gxx, gxy * 3 }; // Top left
+                        DrawText(hdc, (L"Unreliable: " + to_wstring(gold_unreliable)).c_str(), -1, &textRect_unreliable, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_fhk = { gxx, gxy * 4 }; // Top left
+                        DrawText(hdc, (L"From hero kills: " + to_wstring(gold_from_hero_kills)).c_str(), -1, &textRect_fhk, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_fck = { gxx, gxy * 5 }; // Top left
+                        DrawText(hdc, (L"From creep kills: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_fck, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_income = { gxx, gxy * 6 }; // Top left
+                        DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_shared = { gxx, gxy * 7 }; // Top left
+                        DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
+                    }
+                    else {
+                        RECT textRect_gpm = { gxx, gxy }; // Top left
+                        DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_xpm = { gxx, gxy * 2 }; // Top left
+                        DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
+                    }
                 }
                 else {
-                    RECT textRect_gpm = { gxx, gxy }; // Top left
-                    DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_xpm = { gxx, gxy * 2 }; // Top left
-                    DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
-                }
-            }
-            else {
-                if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
-                    RECT textRect_gold = { gxx + 50, gxy }; // Top left
-                    DrawText(hdc, (L"Gold: " + to_wstring(gold)).c_str(), -1, &textRect_gold, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_reliable = { gxx + 50, gxy * 2 }; // Top left
-                    DrawText(hdc, (L"Reliable: " + to_wstring(gold_reliable)).c_str(), -1, &textRect_reliable, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_unreliable = { gxx + 50, gxy * 3 }; // Top left
-                    DrawText(hdc, (L"Unreliable: " + to_wstring(gold_unreliable)).c_str(), -1, &textRect_unreliable, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_fhk = { gxx + 50, gxy * 4 }; // Top left
-                    DrawText(hdc, (L"From hero kills: " + to_wstring(gold_from_hero_kills)).c_str(), -1, &textRect_fhk, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_fck = { gxx + 50, gxy * 5 }; // Top left
-                    DrawText(hdc, (L"From creep kills: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_fck, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_income = { gxx + 50, gxy * 6 }; // Top left
-                    DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_shared = { gxx + 50, gxy * 7 }; // Top left
-                    DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
-                }
-                else {
-                    RECT textRect_gpm = { gxx + 50, gxy }; // Top left
-                    DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
-                    RECT textRect_xpm = { gxx + 50, gxy * 2 }; // Top left
-                    DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
+                    if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
+                        RECT textRect_gold = { gxx + 50, gxy }; // Top left
+                        DrawText(hdc, (L"Gold: " + to_wstring(gold)).c_str(), -1, &textRect_gold, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_reliable = { gxx + 50, gxy * 2 }; // Top left
+                        DrawText(hdc, (L"Reliable: " + to_wstring(gold_reliable)).c_str(), -1, &textRect_reliable, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_unreliable = { gxx + 50, gxy * 3 }; // Top left
+                        DrawText(hdc, (L"Unreliable: " + to_wstring(gold_unreliable)).c_str(), -1, &textRect_unreliable, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_fhk = { gxx + 50, gxy * 4 }; // Top left
+                        DrawText(hdc, (L"From hero kills: " + to_wstring(gold_from_hero_kills)).c_str(), -1, &textRect_fhk, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_fck = { gxx + 50, gxy * 5 }; // Top left
+                        DrawText(hdc, (L"From creep kills: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_fck, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_income = { gxx + 50, gxy * 6 }; // Top left
+                        DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_shared = { gxx + 50, gxy * 7 }; // Top left
+                        DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
+                    }
+                    else {
+                        RECT textRect_gpm = { gxx + 50, gxy }; // Top left
+                        DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
+                        RECT textRect_xpm = { gxx + 50, gxy * 2 }; // Top left
+                        DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
+                    }
                 }
             }
         }
@@ -133,11 +165,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
     }
     case WM_CREATE:
-        SetTimer(hwnd, 1, 1000 / 24, NULL); // 24 FPS refresh rate (adjust as needed)
+        SetTimer(hwnd, 1, 1000 / 60, NULL); // 60 FPS refresh rate (adjust as needed)
         break;
     case WM_TIMER:
         // Trigger data update or periodic UI refresh
         InvalidateRect(hwnd, NULL, TRUE); // Request window redraw
+        if (map_game_state == "lobby") {
+            if (FPSChange != userSettings["FPSLobby"]) {
+                FPSChange = userSettings["FPSLobby"];
+                KillTimer(hwnd, 1);
+                SetTimer(hwnd, 1, 1000 / FPSChange, NULL);
+                #ifdef _DEBUG
+                        cout << "[D] WM_TIMER NEW FPS: " << FPSChange << endl;
+                #endif
+            }
+        }
+        else {
+            if (FPSChange != userSettings["FPSGame"]) {
+                FPSChange = userSettings["FPSGame"];
+                KillTimer(hwnd, 1);
+                SetTimer(hwnd, 1, 1000 / FPSChange, NULL);
+                #ifdef _DEBUG
+                    cout << "[D] WM_TIMER NEW FPS: " << FPSChange << endl;
+                #endif
+            }
+        }
         break;
     case WM_DESTROY:
         KillTimer(hwnd, 1);
@@ -225,6 +277,9 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
         cout << "[!] Failed to start hook..." << endl;
         return 1;
     }
+
+    //const std::string settingsFile = "settings.json";
+    //SETTINGS userSettings = loadSettings(settingsFile);
 
     APP app;
     auto app_info = app_manager();
