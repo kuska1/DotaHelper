@@ -4,7 +4,6 @@
 #include <cctype>
 #include "app_manager.h"
 #include <windows.h>
-#include <windowsx.h>
 #include "window.h"
 #include "resource.h"
 #include "win_hook.h"
@@ -25,39 +24,51 @@ json json_data;
 // Global var
 const string settings_file = "settings.json";
 wstring text_provider = L"...";
-int map_game_time, map_clock_time;
-string map_name, map_game_state = "lobby"; // States: DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP, DOTA_GAMERULES_STATE_HERO_SELECTION, DOTA_GAMERULES_STATE_STRATEGY_TIME, DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD, DOTA_GAMERULES_STATE_GAME_IN_PROGRESS, DOTA_GAMERULES_STATE_PRE_GAME
+json abilities;
+int abilities_size;
+int map_game_time, map_clock_time; // Diffent from each other
+string map_name, map_game_state = "lobby"; // States: DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP, DOTA_GAMERULES_STATE_HERO_SELECTION, DOTA_GAMERULES_STATE_STRATEGY_TIME, DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD, DOTA_GAMERULES_STATE_GAME_IN_PROGRESS, DOTA_GAMERULES_STATE_PRE_GAME, DOTA_GAMERULES_STATE_POST_GAME
 int gold, gold_reliable, gold_unreliable, gold_from_hero_kills, gold_from_creep_kills, gold_from_income, gold_from_shared, gpm, xpm;
 
 // Global settings
 std::map<std::string, int> getDefaultSettings() {
     return {
+        {"FPSLobby", 1},
         {"FPSGame", 24},
-        {"FPSLobby", 1}
+        {"TokenMsgDisappear", 60}
     };
 }
 
 json loadSettings(const std::string& filename) {
     std::ifstream inFile(filename);
-    if (inFile) {
-        json j;
-        inFile >> j; // Читаем JSON из файла
-        return j;
-    }
-    else {
-        // Если файл не существует, создаем настройки по умолчанию
-        auto defaultSettings = getDefaultSettings();
-        json j = json::object();
-        for (const auto& pair : defaultSettings) {
-            j[pair.first] = pair.second; // Заполняем JSON значениями из словаря
-        }
+    json j;
 
+    if (inFile) {
+        inFile >> j; // Read JSON
+    }
+
+    // Default settings
+    auto defaultSettings = getDefaultSettings();
+
+    // Add missing settings
+    bool updated = false;
+    for (const auto& pair : defaultSettings) {
+        if (j.find(pair.first) == j.end()) {
+            // Not found? Add!
+            j[pair.first] = pair.second;
+            updated = true;
+        }
+    }
+
+    // Updated? Save!
+    if (updated) {
         std::ofstream outFile(filename);
         if (outFile) {
-            outFile << j.dump(4); // Сохраняем настройки в файл
+            outFile << j.dump(4); // Saveds
         }
-        return j;
     }
+
+    return j;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -95,9 +106,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         #endif
 
         if (map_game_state != "lobby") {
-            int gxx = 150;
-            int gxy = 13;
             if (map_game_state == "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" || map_game_state == "DOTA_GAMERULES_STATE_PRE_GAME") {
+                int gxx = 150;
+                int gxy = 13;
                 if (map_name != "hero_demo_main") {
                     if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
                         RECT textRect_gold = { gxx, gxy }; // Top left
@@ -114,15 +125,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
                         RECT textRect_shared = { gxx, gxy * 7 }; // Top left
                         DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
-                    }
-                    else {
+                    } else {
                         RECT textRect_gpm = { gxx, gxy }; // Top left
                         DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
                         RECT textRect_xpm = { gxx, gxy * 2 }; // Top left
                         DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
                     }
-                }
-                else {
+                } else {
                     if (GetAsyncKeyState(VK_MENU) & 0x8000) { // VK_MENU corresponds to the Alt key
                         RECT textRect_gold = { gxx + 50, gxy }; // Top left
                         DrawText(hdc, (L"Gold: " + to_wstring(gold)).c_str(), -1, &textRect_gold, DT_SINGLELINE | DT_NOCLIP);
@@ -138,13 +147,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         DrawText(hdc, (L"From income: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_income, DT_SINGLELINE | DT_NOCLIP);
                         RECT textRect_shared = { gxx + 50, gxy * 7 }; // Top left
                         DrawText(hdc, (L"From shared: " + to_wstring(gold_from_creep_kills)).c_str(), -1, &textRect_shared, DT_SINGLELINE | DT_NOCLIP);
-                    }
-                    else {
+                    } else {
                         RECT textRect_gpm = { gxx + 50, gxy }; // Top left
                         DrawText(hdc, (L"GPM: " + to_wstring(gpm)).c_str(), -1, &textRect_gpm, DT_SINGLELINE | DT_NOCLIP);
                         RECT textRect_xpm = { gxx + 50, gxy * 2 }; // Top left
                         DrawText(hdc, (L"XPM: " + to_wstring(xpm)).c_str(), -1, &textRect_xpm, DT_SINGLELINE | DT_NOCLIP);
                     }
+                }
+                if (map_clock_time >= 420 && map_clock_time <= 420+userSettings["TokenMsgDisappear"] || map_clock_time >= 1020 && map_clock_time <= 1020+userSettings["TokenMsgDisappear"] || map_clock_time >= 1620 && map_clock_time <= 1620+userSettings["TokenMsgDisappear"] || map_clock_time >= 2220 && map_clock_time <= 2220+userSettings["TokenMsgDisappear"] || map_clock_time >= 3600 && map_clock_time <= 3600+userSettings["TokenMsgDisappear"]) {
+                    RECT textRect_neutral = { horizontal - 615 + (25 * abilities_size), vertical - 95 }; // Tokens
+                    DrawText(hdc, L"NEW NEUTRAL TOKENS", -1, &textRect_neutral, DT_SINGLELINE | DT_NOCLIP);
                 }
             }
         }
@@ -237,16 +249,26 @@ void onServerDataReceived(const std::string& data) {
         string str_some_data = to_string(json_data["provider"]["name"]) + " (v" + to_string(json_data["provider"]["version"]) + "): " + to_string(json_data["provider"]["timestamp"]);
         text_provider = wstring(str_some_data.begin(), str_some_data.end()).c_str();
     }
+    if (json_data.contains("abilities") && !json_data["abilities"].empty() && !json_data["abilities"].contains("team2")) {
+        abilities = json_data["abilities"];
+        abilities_size = json_data["abilities"].size() - 3;
+        #ifdef _DEBUG
+                cout << "[D] Abilities: Success!" << endl;
+        #endif
+    }
     if (json_data.contains("map") && !json_data["map"].empty()) {
         map_name = json_data["map"]["name"];
         map_game_time = json_data["map"]["game_time"];
         map_clock_time = json_data["map"]["clock_time"];
         map_game_state = json_data["map"]["game_state"];
+        #ifdef _DEBUG
+                cout << "[D] Map: Success!" << endl;
+        #endif
     }
     else {
         map_game_state = "lobby";
     }
-    if (json_data.contains("player") && !json_data["player"].empty()) {
+    if (json_data.contains("player") && !json_data["player"].empty() && !json_data["player"].contains("team2")) {
         gold = json_data["player"]["gold"];
         gold_reliable = json_data["player"]["gold_reliable"];
         gold_unreliable = json_data["player"]["gold_unreliable"];
@@ -256,6 +278,9 @@ void onServerDataReceived(const std::string& data) {
         gold_from_shared = json_data["player"]["gold_from_shared"];
         gpm = json_data["player"]["gpm"];
         xpm = json_data["player"]["xpm"];
+        #ifdef _DEBUG
+                cout << "[D] Player: Success!" << endl;
+        #endif
     }
     //InvalidateRect(hwnd, NULL, TRUE);
 }
@@ -277,9 +302,6 @@ int RunWindow(HINSTANCE hInstance, int nCmdShow) {
         cout << "[!] Failed to start hook..." << endl;
         return 1;
     }
-
-    //const std::string settingsFile = "settings.json";
-    //SETTINGS userSettings = loadSettings(settingsFile);
 
     APP app;
     auto app_info = app_manager();
