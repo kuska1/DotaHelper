@@ -20,6 +20,7 @@ using json = nlohmann::json;
 HWND hwnd = NULL;
 int horizontal, vertical = 0;
 json json_data;
+bool first_paint = false;
 
 // Global var
 wstring text_provider = L"...";
@@ -36,11 +37,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         HDC hdc = BeginPaint(hwnd, &ps);
 
         // Clear
-        RECT clientRect;
-        GetClientRect(hwnd, &clientRect);
-        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-        FillRect(hdc, &clientRect, hBrush);
-        DeleteObject(hBrush);
+        if (map_game_state != "lobby") {
+            RECT clientRect;
+            GetClientRect(hwnd, &clientRect);
+            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+            FillRect(hdc, &clientRect, hBrush);
+            DeleteObject(hBrush);
+        } else {
+            if (first_paint == false) {
+                first_paint = true;
+            } else {
+                break;
+            }
+        }
 
         // Set up text properties
         SetTextColor(hdc, RGB(255, 255, 255)); // White text color
@@ -51,7 +60,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         RECT textRect_build = { 5, vertical - 20 }; // Bottom left
         DrawText(hdc, text_build, -1, &textRect_build, DT_SINGLELINE | DT_NOCLIP);
         #ifdef _DEBUG
-            // Focus status text
             RECT textRect_provider = { 5, vertical - 35 }; // Bottom left
             DrawText(hdc, text_provider.c_str(), -1, &textRect_provider, DT_SINGLELINE | DT_NOCLIP);
         #endif
