@@ -11,7 +11,7 @@ int main() {
     auto app_info = app_manager();
 
     // Convert app_full to wide string
-    SetConsoleTitle(std::wstring(app.app_full.begin(), app.app_full.end()).c_str());
+    SetConsoleTitle(wstring(app.app_full.begin(), app.app_full.end()).c_str());
 
     cout << endl;
     cout << R"(         ____  _____ _____ _____ _____ _____ __    _____ _____ _____ )" << endl;
@@ -24,6 +24,7 @@ int main() {
         cout << endl << "[D] Mode: " << build.app_mode;
         cout << endl << "[D] Platform: x" << build.app_platform;
     #endif
+    cout << endl;
 
     HINSTANCE hInstance = GetModuleHandle(NULL);
     int nCmdShow = SW_SHOW;

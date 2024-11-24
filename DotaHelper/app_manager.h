@@ -8,8 +8,10 @@
 class APP {
 public:
     const std::string app_name = "Dota Helper";
+    const std::wstring wide_app_name = std::wstring(app_name.begin(), app_name.end());
     const float app_version = 1.0;
     const std::string app_full = createAppFull();
+    const std::wstring wide_app_full = std::wstring(app_full.begin(), app_full.end());
 private:
     std::string createAppFull() const {
         std::ostringstream stream;
@@ -22,17 +24,23 @@ private:
 class BUILD {
 public:
     #ifdef _DEBUG
-        std::string app_mode = "Debug";
+        const std::string app_mode = "Debug";
     #else
-        std::string app_mode = "Release";
+        const std::string app_mode = "Release";
     #endif
     #if defined(_M_X64) || defined(__x86_64__)
-        int app_platform = 64;
+        const int app_platform = 64;
     #elif defined(_M_IX86) || defined(__i386__)
-        int app_platform = 86;
+        const int app_platform = 86;
     #else
-        int app_platform = 0;
+        const int app_platform = 0;
     #endif
+        const std::string build_full = createAppFull();
+        const std::wstring wide_build_full = std::wstring(build_full.begin(), build_full.end());
+private:
+    std::string createAppFull() const {
+        return app_mode + " x" + std::to_string(app_platform);
+    }
 };
 
 std::pair<APP, BUILD> app_manager();

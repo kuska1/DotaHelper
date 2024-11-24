@@ -70,6 +70,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>false</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -129,12 +135,14 @@
   <ItemGroup>
     <ClCompile Include="app_manager.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="server.cpp" />
     <ClCompile Include="window.cpp" />
     <ClCompile Include="win_hook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app_manager.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="server.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="win_hook.h" />
   </ItemGroup>
