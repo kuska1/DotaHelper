@@ -21,6 +21,9 @@ vcpkg_installed/
 vcpkg.json
 vcpkg-configuration.json
 
+# Settings
+settings.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
