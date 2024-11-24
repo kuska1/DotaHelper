@@ -155,7 +155,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     }
                 }
                 if (map_clock_time >= 420 && map_clock_time <= 420+userSettings["TokenMsgDisappear"] || map_clock_time >= 1020 && map_clock_time <= 1020+userSettings["TokenMsgDisappear"] || map_clock_time >= 1620 && map_clock_time <= 1620+userSettings["TokenMsgDisappear"] || map_clock_time >= 2220 && map_clock_time <= 2220+userSettings["TokenMsgDisappear"] || map_clock_time >= 3600 && map_clock_time <= 3600+userSettings["TokenMsgDisappear"]) {
-                    RECT textRect_neutral = { horizontal - 615 + (25 * abilities_size), vertical - 95 }; // Tokens
+                    RECT textRect_neutral = { horizontal - 615 + (25 * abilities_size), vertical - 95 }; // Near token slot
                     DrawText(hdc, L"NEW NEUTRAL TOKENS", -1, &textRect_neutral, DT_SINGLELINE | DT_NOCLIP);
                 }
             }
