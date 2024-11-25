@@ -17,7 +17,6 @@ Add overlay to game that shows some info in DOTA 2.
 ## Roadmap
 
 - Add aegis & roshan info
-
 - Add Kez's skills cooldown info
 
 ## Feedback
@@ -28,4 +27,3 @@ If you have any feedback, please reach out to us at kusakaonelove@gmail.com or h
 
 - [@kuska1](https://www.github.com/kuska1)
 - ChatGPT
-
