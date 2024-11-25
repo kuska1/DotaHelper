@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <string>
 #include <cctype>
@@ -24,7 +24,13 @@ json json_data;
 // Global var
 const string settings_file = "settings.json";
 wstring text_provider = L"...";
+vector<string> arrows = { "↓", "→", "↑", "←" };
+wstring conjure_arrow = L"↓";
+bool conjure_cd = false;
+string hero_name;
 json abilities;
+json items;
+json previously;
 int abilities_size;
 int map_game_time, map_clock_time; // Diffent from each other
 string map_name, map_game_state = "lobby"; // States: DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP, DOTA_GAMERULES_STATE_HERO_SELECTION, DOTA_GAMERULES_STATE_STRATEGY_TIME, DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD, DOTA_GAMERULES_STATE_GAME_IN_PROGRESS, DOTA_GAMERULES_STATE_PRE_GAME, DOTA_GAMERULES_STATE_POST_GAME
@@ -155,8 +161,63 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     }
                 }
                 if (map_clock_time >= 420 && map_clock_time <= 420+userSettings["TokenMsgDisappear"] || map_clock_time >= 1020 && map_clock_time <= 1020+userSettings["TokenMsgDisappear"] || map_clock_time >= 1620 && map_clock_time <= 1620+userSettings["TokenMsgDisappear"] || map_clock_time >= 2220 && map_clock_time <= 2220+userSettings["TokenMsgDisappear"] || map_clock_time >= 3600 && map_clock_time <= 3600+userSettings["TokenMsgDisappear"]) {
-                    RECT textRect_neutral = { horizontal - 615 + (25 * abilities_size), vertical - 95 }; // Near token slot
+                    RECT textRect_neutral = { horizontal - 620 + (25 * abilities_size), vertical - 95 }; // Near token slot
                     DrawText(hdc, L"NEW NEUTRAL TOKENS", -1, &textRect_neutral, DT_SINGLELINE | DT_NOCLIP);
+                }
+                if (items.contains("teleport0") && !items["teleport0"].empty() && items["teleport0"]["charges"] <= 0) {
+                    RECT textRect_neutral = { horizontal - 615 + (25 * abilities_size), vertical - 40 }; // Near token slot
+                    DrawText(hdc, L"NO TELEPORT", -1, &textRect_neutral, DT_SINGLELINE | DT_NOCLIP);
+                }
+                if (hero_name == "npc_dota_hero_terrorblade" && abilities["ability1"]["level"] != 0) {
+                    if (map_clock_time >= 0 && map_clock_time <= 180) {
+                        RECT textRect_fix_conjure = { horizontal / 2.5, vertical - 200 }; // Center upper abilities
+                        DrawText(hdc, L"TO FIX ILLUSION PREDICT HOLD 'ALT + W'", -1, &textRect_fix_conjure, DT_SINGLELINE | DT_NOCLIP);
+                    }
+                    // '↓', '→', '↑', '←'
+                    HFONT hFont = CreateFont(
+                        22, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+                        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                        ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Arial");
+                    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+                    RECT textRect_conjure = { horizontal - 915 + (-25 * abilities_size), vertical - 180 }; // Upper conjure image
+                    DrawText(hdc, conjure_arrow.c_str(), -1, &textRect_conjure, DT_SINGLELINE | DT_NOCLIP);
+                    if (GetAsyncKeyState(0x57)) {
+                        if (abilities["ability1"]["cooldown"] == 0) {
+                            if (conjure_cd == false) {
+                                conjure_cd = true;
+                                if (conjure_arrow == L"↓") {
+                                    conjure_arrow = L"→";
+                                }
+                                else if (conjure_arrow == L"→") {
+                                    conjure_arrow = L"↑";
+                                }
+                                else if (conjure_arrow == L"↑") {
+                                    conjure_arrow = L"←";
+                                }
+                                else if (conjure_arrow == L"←") {
+                                    conjure_arrow = L"↓";
+                                }
+                            }
+                        }
+                    } else {
+                        if (conjure_cd == true) {
+                            conjure_cd = false;
+                        }
+                    }
+                    if (GetAsyncKeyState(VK_MENU) & 0x8000 && GetAsyncKeyState(0x57)) {
+                        if (conjure_arrow == L"↓") {
+                            conjure_arrow = L"→";
+                        }
+                        else if (conjure_arrow == L"→") {
+                            conjure_arrow = L"↑";
+                        }
+                        else if (conjure_arrow == L"↑") {
+                            conjure_arrow = L"←";
+                        }
+                        else if (conjure_arrow == L"←") {
+                            conjure_arrow = L"↓";
+                        }
+                    }
                 }
             }
         }
@@ -249,11 +310,23 @@ void onServerDataReceived(const std::string& data) {
         string str_some_data = to_string(json_data["provider"]["name"]) + " (v" + to_string(json_data["provider"]["version"]) + "): " + to_string(json_data["provider"]["timestamp"]);
         text_provider = wstring(str_some_data.begin(), str_some_data.end()).c_str();
     }
+    if (json_data.contains("hero") && !json_data["hero"].empty() && !json_data["hero"].contains("hero")) {
+        hero_name = json_data["hero"]["name"];
+        #ifdef _DEBUG
+                cout << "[D] Hero: Success!" << endl;
+        #endif
+    }
     if (json_data.contains("abilities") && !json_data["abilities"].empty() && !json_data["abilities"].contains("team2")) {
         abilities = json_data["abilities"];
         abilities_size = json_data["abilities"].size() - 3;
         #ifdef _DEBUG
                 cout << "[D] Abilities: Success!" << endl;
+        #endif
+    }
+    if (json_data.contains("items") && !json_data["items"].empty() && !json_data["items"].contains("team2")) {
+        items = json_data["items"];
+        #ifdef _DEBUG
+            cout << "[D] Items: Success!" << endl;
         #endif
     }
     if (json_data.contains("map") && !json_data["map"].empty()) {
@@ -282,6 +355,12 @@ void onServerDataReceived(const std::string& data) {
                 cout << "[D] Player: Success!" << endl;
         #endif
     }
+    if (json_data.contains("previously") && !json_data["previously"].empty() && !json_data["previously"].contains("team2")) {
+        previously = json_data["previously"];
+        #ifdef _DEBUG
+                cout << "[D] Previously: Success!" << endl;
+        #endif
+    }
     //InvalidateRect(hwnd, NULL, TRUE);
 }
 
@@ -295,7 +374,7 @@ void startServerAsync() {
 
 
 int RunWindow(HINSTANCE hInstance, int nCmdShow) {
-
+    system("chcp 1251 > nul"); // Fix language issues
     startServerAsync();
 
     if (!StartWinEventHook(OnWindowChange)) {
