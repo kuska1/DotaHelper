@@ -35,6 +35,10 @@ Before starting Dota 2 and Dota Helper, make sure that you have the special [con
 - Add aegis & roshan info
 - Add Kez's skills cooldown info
 
+## Used libraries
+
+- [nlohmann/json](https://github.com/nlohmann/json)
+- [crow](https://github.com/CrowCpp/Crow)
 ## Feedback
 
 If you have any feedback, please reach out to us at kusakaonelove@gmail.com or https://t.me/Ym9nZGFu
@@ -44,8 +48,3 @@ If you have any feedback, please reach out to us at kusakaonelove@gmail.com or h
 - [@kuska1](https://www.github.com/kuska1)
 - ChatGPT
 
-
-## Used libraries
-
-- [nlohmann/json](https://github.com/nlohmann/json)
-- [crow](https://github.com/CrowCpp/Crow)
