@@ -21,7 +21,7 @@ Add overlay to game that shows some info in DOTA 2.
 
 ## Feedback
 
-If you have any feedback, please reach out to us at kusakaonelove@gmail.com or https://t.me/Ym9nZGFu
+If you have any feedback, please reach out to me at kusakaonelove@gmail.com or https://t.me/Ym9nZGFu
 
 ## Authors
 
