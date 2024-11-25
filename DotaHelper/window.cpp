@@ -11,6 +11,7 @@
 #include "server.h"
 #include <nlohmann/json.hpp> // vckpg
 #include <map>
+#include <unordered_map>
 using namespace std;
 
 using json = nlohmann::json;
@@ -27,6 +28,12 @@ wstring text_provider = L"...";
 vector<string> arrows = { "↓", "→", "↑", "←" };
 wstring conjure_arrow = L"↓";
 bool conjure_cd = false;
+std::unordered_map<std::string, int> invoker_skills_cooldown_list = {
+    {"invoker_cold_snap", 0}, {"invoker_ghost_walk", 0}, {"invoker_ice_wall", 0},
+    {"invoker_emp", 0}, {"invoker_tornado", 0}, {"invoker_alacrity", 0},
+    {"invoker_sun_strike", 0}, {"invoker_forge_spirit", 0},
+    {"invoker_chaos_meteor", 0}, {"invoker_deafening_blast", 0}
+};
 string hero_name;
 json abilities;
 json items;
@@ -41,7 +48,8 @@ std::map<std::string, int> getDefaultSettings() {
     return {
         {"FPSLobby", 1},
         {"FPSGame", 24},
-        {"TokenMsgDisappear", 60}
+        {"TokenMsgDisappear", 60},
+        {"InvokerShowAlways", 0}
     };
 }
 
@@ -169,7 +177,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     DrawText(hdc, L"NO TELEPORT", -1, &textRect_neutral, DT_SINGLELINE | DT_NOCLIP);
                 }
                 if (hero_name == "npc_dota_hero_terrorblade" && abilities["ability1"]["level"] != 0) {
-                    if (map_clock_time >= 0 && map_clock_time <= 180) {
+                    if (map_clock_time >= -60 && map_clock_time <= 60) {
                         RECT textRect_fix_conjure = { horizontal / 2.5, vertical - 200 }; // Center upper abilities
                         DrawText(hdc, L"TO FIX ILLUSION PREDICT HOLD 'ALT + W'", -1, &textRect_fix_conjure, DT_SINGLELINE | DT_NOCLIP);
                     }
@@ -179,7 +187,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
                         ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Arial");
                     HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-                    RECT textRect_conjure = { horizontal - 915 + (-25 * abilities_size), vertical - 180 }; // Upper conjure image
+                    RECT textRect_conjure = { horizontal - 915 + (-25 * abilities_size), vertical - 180 }; // Upper abilities
                     DrawText(hdc, conjure_arrow.c_str(), -1, &textRect_conjure, DT_SINGLELINE | DT_NOCLIP);
                     if (GetAsyncKeyState(0x57)) {
                         if (abilities["ability1"]["cooldown"] == 0) {
@@ -217,6 +225,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         else if (conjure_arrow == L"←") {
                             conjure_arrow = L"↓";
                         }
+                    }
+                }
+                else if (hero_name == "npc_dota_hero_invoker") {
+                    if (abilities["ability3"]["passive"] != true || abilities["ability4"]["passive"] != true) {
+                        invoker_skills_cooldown_list[abilities["ability3"]["name"]] = map_clock_time + abilities["ability3"]["cooldown"];
+                        invoker_skills_cooldown_list[abilities["ability4"]["name"]] = map_clock_time + abilities["ability4"]["cooldown"];
+                    }
+                    if (!GetAsyncKeyState(VK_MENU) && userSettings["InvokerShowAlways"] == 0) {
+                        RECT textRect_invoke_cd = { horizontal / 4, vertical - 200 }; // Upper portrait
+                        DrawText(hdc, L"HOLD 'ALT' TO CHECK COOLDOWN", -1, &textRect_invoke_cd, DT_SINGLELINE | DT_NOCLIP);
+                    } else {
+                        SetTextColor(hdc, RGB(151, 217, 255));
+                        RECT textRect_q_cd = { horizontal / 4.6, vertical - 245 }; // Upper portrait
+                        DrawText(hdc, (L"COLD SNAP: " + to_wstring(max((invoker_skills_cooldown_list["invoker_cold_snap"] - map_clock_time), 0)) + L"\nGHOST WALK: " + to_wstring(max((invoker_skills_cooldown_list["invoker_ghost_walk"] - map_clock_time), 0)) + L"\nICE WALL: " + to_wstring(max((invoker_skills_cooldown_list["invoker_ice_wall"] - map_clock_time), 0))).c_str(), -1, &textRect_q_cd, DT_NOCLIP);
+                        SetTextColor(hdc, RGB(250, 173, 246));
+                        RECT textRect_w_cd = { horizontal / 3.53, vertical - 245 }; // Upper portrait
+                        DrawText(hdc, (L"E.M.P.: " + to_wstring(max((invoker_skills_cooldown_list["invoker_emp"] - map_clock_time), 0)) + L"\nTORNADO: " + to_wstring(max((invoker_skills_cooldown_list["invoker_tornado"] - map_clock_time), 0)) + L"\nALACRITY: " + to_wstring(max((invoker_skills_cooldown_list["invoker_alacrity"] - map_clock_time), 0))).c_str(), -1, &textRect_w_cd, DT_NOCLIP);
+                        SetTextColor(hdc, RGB(244, 204, 53));
+                        RECT textRect_e_cd = { horizontal / 3, vertical - 245 }; // Upper portrait
+                        DrawText(hdc, (L"SUNSTRIKE: " + to_wstring(max((invoker_skills_cooldown_list["invoker_sun_strike"] - map_clock_time), 0)) + L"\nFORGE SPIRIT: " + to_wstring(max((invoker_skills_cooldown_list["invoker_forge_spirit"] - map_clock_time), 0)) + L"\nCHAOS METEOR: " + to_wstring(max((invoker_skills_cooldown_list["invoker_chaos_meteor"] - map_clock_time), 0))).c_str(), -1, &textRect_e_cd, DT_NOCLIP);
+                        SetTextColor(hdc, RGB(255, 255, 255));
+                        RECT textRect_b_cd = { horizontal / 3.8, vertical - 190 }; // Upper portrait
+                        DrawText(hdc, (L"DEAFENING BLAST: " + to_wstring(max((invoker_skills_cooldown_list["invoker_deafening_blast"] - map_clock_time), 0))).c_str(), -1, &textRect_b_cd, DT_NOCLIP);
                     }
                 }
             }
