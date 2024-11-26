@@ -32,11 +32,11 @@ Before starting Dota 2 and Dota Helper, make sure that you have the special [con
 - Info about your gold (reliable, unreliable, from hero kills, from creep kills, from income, from shared)
 - Terrorblade's conjure image spawn predict
 - Invoker's ability cooldown
+- Kez's ability cooldown
 
 ## 🛠 Roadmap
 
 - Add aegis & roshan info
-- Add Kez's skills cooldown info
 
 ## 📚 Used libraries
 
