@@ -5,7 +5,7 @@ Helper for the game Dota 2 that puts an overlay with some information.
 [![Last Release](https://img.shields.io/github/v/release/kuska1/DotaHelper)](https://github.com/kuska1/DotaHelper/releases)
 [![Last Date](https://img.shields.io/github/release-date/kuska1/DotaHelper)](https://github.com/kuska1/DotaHelper/releases)
 [![MIT License](https://img.shields.io/github/license/kuska1/DotaHelper)](https://github.com/kuska1/DotaHelper?tab=MIT-1-ov-file)
-[![Top Language](https://img.shields.io/github/languages/top/kuska1/DotaHelper)](https://github.com/kuska1/DotaHelper)
+[![Top Language](https://img.shields.io/github/languages/top/kuska1/DotaHelper)](https://github.com/kuska1/DotaHelper/search?l=c%2B%2B)
 
 ## ⚠️ Disclaimer
 
