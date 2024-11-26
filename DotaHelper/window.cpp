@@ -31,10 +31,15 @@ bool conjure_cd = false;
 std::unordered_map<std::string, int> invoker_skills_cooldown_list = {
     {"invoker_cold_snap", 0}, {"invoker_ghost_walk", 0}, {"invoker_ice_wall", 0},
     {"invoker_emp", 0}, {"invoker_tornado", 0}, {"invoker_alacrity", 0},
-    {"invoker_sun_strike", 0}, {"invoker_forge_spirit", 0},
-    {"invoker_chaos_meteor", 0}, {"invoker_deafening_blast", 0}
+    {"invoker_sun_strike", 0}, {"invoker_forge_spirit", 0}, {"invoker_chaos_meteor", 0},
+    {"invoker_deafening_blast", 0}
+};
+std::unordered_map<std::string, int> kez_skills_cooldown_list = {
+    {"kez_echo_slash", 0}, {"kez_grappling_claw", 0}, {"kez_kazurai_katana", 0}, {"kez_raptor_dance", 0},
+    {"kez_falcon_rush", 0}, {"kez_talon_toss", 0}, {"kez_shodo_sai", 0}, {"kez_ravens_veil", 0}
 };
 string hero_name;
+bool hero_scepter;
 json abilities;
 json items;
 json previously;
@@ -49,7 +54,7 @@ std::map<std::string, int> getDefaultSettings() {
         {"FPSLobby", 1},
         {"FPSGame", 24},
         {"TokenMsgDisappear", 60},
-        {"InvokerShowAlways", 0}
+        {"CooldownShowAlways", 0}
     };
 }
 
@@ -226,28 +231,58 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                             conjure_arrow = L"↓";
                         }
                     }
-                }
-                else if (hero_name == "npc_dota_hero_invoker") {
+                } else if (hero_name == "npc_dota_hero_invoker") {
                     if (abilities["ability3"]["passive"] != true || abilities["ability4"]["passive"] != true) {
                         invoker_skills_cooldown_list[abilities["ability3"]["name"]] = map_clock_time + abilities["ability3"]["cooldown"];
                         invoker_skills_cooldown_list[abilities["ability4"]["name"]] = map_clock_time + abilities["ability4"]["cooldown"];
                     }
-                    if (!GetAsyncKeyState(VK_MENU) && userSettings["InvokerShowAlways"] == 0) {
-                        RECT textRect_invoke_cd = { horizontal / 4, vertical - 200 }; // Upper portrait
-                        DrawText(hdc, L"HOLD 'ALT' TO CHECK COOLDOWN", -1, &textRect_invoke_cd, DT_SINGLELINE | DT_NOCLIP);
+                    if (!GetAsyncKeyState(VK_MENU) && userSettings["CooldownShowAlways"] == 0) {
+                        RECT textRect_cd_abi = { horizontal / 4, vertical - 200 }; // Upper portrait
+                        DrawText(hdc, L"HOLD 'ALT' TO CHECK COOLDOWN", -1, &textRect_cd_abi, DT_SINGLELINE | DT_NOCLIP);
                     } else {
                         SetTextColor(hdc, RGB(151, 217, 255));
                         RECT textRect_q_cd = { horizontal / 4.6, vertical - 245 }; // Upper portrait
-                        DrawText(hdc, (L"COLD SNAP: " + to_wstring(max((invoker_skills_cooldown_list["invoker_cold_snap"] - map_clock_time), 0)) + L"\nGHOST WALK: " + to_wstring(max((invoker_skills_cooldown_list["invoker_ghost_walk"] - map_clock_time), 0)) + L"\nICE WALL: " + to_wstring(max((invoker_skills_cooldown_list["invoker_ice_wall"] - map_clock_time), 0))).c_str(), -1, &textRect_q_cd, DT_NOCLIP);
+                        DrawText(hdc, (L"COLD SNAP:    " + to_wstring(max((invoker_skills_cooldown_list["invoker_cold_snap"] - map_clock_time), 0)) + L"\nGHOST WALK: " + to_wstring(max((invoker_skills_cooldown_list["invoker_ghost_walk"] - map_clock_time), 0)) + L"\nICE WALL:       " + to_wstring(max((invoker_skills_cooldown_list["invoker_ice_wall"] - map_clock_time), 0))).c_str(), -1, &textRect_q_cd, DT_NOCLIP);
                         SetTextColor(hdc, RGB(250, 173, 246));
                         RECT textRect_w_cd = { horizontal / 3.53, vertical - 245 }; // Upper portrait
-                        DrawText(hdc, (L"E.M.P.: " + to_wstring(max((invoker_skills_cooldown_list["invoker_emp"] - map_clock_time), 0)) + L"\nTORNADO: " + to_wstring(max((invoker_skills_cooldown_list["invoker_tornado"] - map_clock_time), 0)) + L"\nALACRITY: " + to_wstring(max((invoker_skills_cooldown_list["invoker_alacrity"] - map_clock_time), 0))).c_str(), -1, &textRect_w_cd, DT_NOCLIP);
+                        DrawText(hdc, (L"E.M.P.:       " + to_wstring(max((invoker_skills_cooldown_list["invoker_emp"] - map_clock_time), 0)) + L"\nTORNADO: " + to_wstring(max((invoker_skills_cooldown_list["invoker_tornado"] - map_clock_time), 0)) + L"\nALACRITY: " + to_wstring(max((invoker_skills_cooldown_list["invoker_alacrity"] - map_clock_time), 0))).c_str(), -1, &textRect_w_cd, DT_NOCLIP);
                         SetTextColor(hdc, RGB(244, 204, 53));
                         RECT textRect_e_cd = { horizontal / 3, vertical - 245 }; // Upper portrait
-                        DrawText(hdc, (L"SUNSTRIKE: " + to_wstring(max((invoker_skills_cooldown_list["invoker_sun_strike"] - map_clock_time), 0)) + L"\nFORGE SPIRIT: " + to_wstring(max((invoker_skills_cooldown_list["invoker_forge_spirit"] - map_clock_time), 0)) + L"\nCHAOS METEOR: " + to_wstring(max((invoker_skills_cooldown_list["invoker_chaos_meteor"] - map_clock_time), 0))).c_str(), -1, &textRect_e_cd, DT_NOCLIP);
+                        DrawText(hdc, (L"SUNSTRIKE:        " + to_wstring(max((invoker_skills_cooldown_list["invoker_sun_strike"] - map_clock_time), 0)) + L"\nFORGE SPIRIT:    " + to_wstring(max((invoker_skills_cooldown_list["invoker_forge_spirit"] - map_clock_time), 0)) + L"\nCHAOS METEOR: " + to_wstring(max((invoker_skills_cooldown_list["invoker_chaos_meteor"] - map_clock_time), 0))).c_str(), -1, &textRect_e_cd, DT_NOCLIP);
                         SetTextColor(hdc, RGB(255, 255, 255));
                         RECT textRect_b_cd = { horizontal / 3.8, vertical - 190 }; // Upper portrait
                         DrawText(hdc, (L"DEAFENING BLAST: " + to_wstring(max((invoker_skills_cooldown_list["invoker_deafening_blast"] - map_clock_time), 0))).c_str(), -1, &textRect_b_cd, DT_NOCLIP);
+                    }
+                } else if (hero_name == "npc_dota_hero_kez" && hero_scepter == true) {
+                    kez_skills_cooldown_list[abilities["ability0"]["name"]] = map_clock_time + abilities["ability0"]["cooldown"];
+                    kez_skills_cooldown_list[abilities["ability1"]["name"]] = map_clock_time + abilities["ability1"]["cooldown"];
+                    kez_skills_cooldown_list[abilities["ability2"]["name"]] = map_clock_time + abilities["ability2"]["cooldown"];
+                    kez_skills_cooldown_list[abilities["ability4"]["name"]] = map_clock_time + abilities["ability4"]["cooldown"];
+                    if (!GetAsyncKeyState(VK_MENU) && userSettings["CooldownShowAlways"] == 0) {
+                        RECT textRect_cd_abi = { horizontal / 2.32, vertical - 180 }; // Upper abilities
+                        DrawText(hdc, L"HOLD 'ALT' TO CHECK COOLDOWN", -1, &textRect_cd_abi, DT_SINGLELINE | DT_NOCLIP);
+                    } else {
+                        if (abilities["ability4"]["name"] == "kez_raptor_dance") {
+                            SetTextColor(hdc, RGB(220, 220, 255));
+                            RECT textRect_k1_cd = { horizontal / 2.33, vertical - 160 }; // Upper abilities (Q)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_falcon_rush"] - map_clock_time), 0)).c_str(), -1, &textRect_k1_cd, DT_NOCLIP);
+                            RECT textRect_k2_cd = { horizontal / 2.17, vertical - 160 }; // Upper abilities (W)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_talon_toss"] - map_clock_time), 0)).c_str(), -1, &textRect_k2_cd, DT_NOCLIP);
+                            RECT textRect_k3_cd = { horizontal / 2.04, vertical - 160 }; // Upper abilities (E)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_shodo_sai"] - map_clock_time), 0)).c_str(), -1, &textRect_k3_cd, DT_NOCLIP);
+                            RECT textRect_k4_cd = { horizontal / 1.82, vertical - 160 }; // Upper abilities (R)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_ravens_veil"] - map_clock_time), 0)).c_str(), -1, &textRect_k4_cd, DT_NOCLIP);
+                        } else {
+                            SetTextColor(hdc, RGB(204, 204, 0));
+                            RECT textRect_k1_cd = { horizontal / 2.33, vertical - 160 }; // Upper abilities (Q)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_echo_slash"] - map_clock_time), 0)).c_str(), -1, &textRect_k1_cd, DT_NOCLIP);
+                            RECT textRect_k2_cd = { horizontal / 2.17, vertical - 160 }; // Upper abilities (W)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_grappling_claw"] - map_clock_time), 0)).c_str(), -1, &textRect_k2_cd, DT_NOCLIP);
+                            RECT textRect_k3_cd = { horizontal / 2.04, vertical - 160 }; // Upper abilities (E)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_kazurai_katana"] - map_clock_time), 0)).c_str(), -1, &textRect_k3_cd, DT_NOCLIP);
+                            RECT textRect_k4_cd = { horizontal / 1.82, vertical - 160 }; // Upper abilities (R)
+                            DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_raptor_dance"] - map_clock_time), 0)).c_str(), -1, &textRect_k4_cd, DT_NOCLIP);
+                        }
                     }
                 }
             }
@@ -343,6 +378,7 @@ void onServerDataReceived(const std::string& data) {
     }
     if (json_data.contains("hero") && !json_data["hero"].empty() && !json_data["hero"].contains("hero")) {
         hero_name = json_data["hero"]["name"];
+        hero_scepter = json_data["hero"]["aghanims_scepter"];
         #ifdef _DEBUG
                 cout << "[D] Hero: Success!" << endl;
         #endif
