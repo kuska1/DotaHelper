@@ -42,6 +42,12 @@ string hero_name;
 bool hero_scepter;
 json abilities;
 json items;
+std::unordered_map<int, float> aegis_coords = {
+    {1, 3.39}, {2, 3.04}, {3, 2.77}, {4, 2.55}, {5, 2.36},
+    {6, 1.78}, {7, 1.68}, {8, 1.596}, {9, 1.515}, {10, 1.444}
+};
+string event_type;
+int event_game_time, event_player;
 json previously;
 int abilities_size;
 int map_game_time, map_clock_time; // Diffent from each other
@@ -88,6 +94,17 @@ json loadSettings(const std::string& filename) {
     }
 
     return j;
+}
+
+string formatTimestamp(int seconds) {
+    int minutes = seconds / 60;
+    int remaining_seconds = seconds % 60;
+
+    // Format the output
+    std::ostringstream formattedTimestamp;
+    formattedTimestamp << minutes << ":" << std::setw(2) << std::setfill('0') << remaining_seconds;
+
+    return formattedTimestamp.str();
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -285,6 +302,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         }
                     }
                 }
+                // 1: 3.39, 3.04, 2.77, 2.55, 2.36
+                // 2: 1.78, 1.68, 1.596, 1.515, 1.444
+                //RECT textRect_aegis = { horizontal / 1.444, 50 }; // Bot players
+                //DrawText(hdc, L"5:00", -1, &textRect_aegis, DT_NOCLIP);
+                if (event_type == "aegis_picked_up") {
+                    RECT textRect_aegis_info = { horizontal - 240, 40 }; // Bot FPS / PING
+                    DrawText(hdc, L"USE 'ALT + F1' TO HIDE AEGIS INFO", -1, &textRect_aegis_info, DT_NOCLIP);
+                    int aegis_life = max((event_game_time - map_game_time) + 300, 0);
+                    string aegis_timestamp = formatTimestamp(aegis_life);
+                    SetTextColor(hdc, RGB(255, 50, 50));
+                    RECT textRect_aegis = { horizontal / aegis_coords[event_player + 1], 50 }; // Bot players
+                    DrawText(hdc, wstring(aegis_timestamp.begin(), aegis_timestamp.end()).c_str(), -1, &textRect_aegis, DT_NOCLIP);
+                    if (aegis_life <= 0 || (GetAsyncKeyState(VK_MENU) && GetAsyncKeyState(VK_F1))) {
+                        event_type = "";
+                    }
+                }
             }
         }
         else {
@@ -420,6 +453,14 @@ void onServerDataReceived(const std::string& data) {
         xpm = json_data["player"]["xpm"];
         #ifdef _DEBUG
                 cout << "[D] Player: Success!" << endl;
+        #endif
+    }
+    if (json_data.contains("events") && !json_data["events"].empty() && !json_data["events"].contains("team2")) {
+        event_game_time = json_data["events"][0]["game_time"];
+        event_type = json_data["events"][0]["event_type"];
+        event_player = json_data["events"][0]["player_id"];
+        #ifdef _DEBUG
+                cout << "[D] Events: Success!" << endl;
         #endif
     }
     if (json_data.contains("previously") && !json_data["previously"].empty() && !json_data["previously"].contains("team2")) {
