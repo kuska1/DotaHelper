@@ -9,7 +9,7 @@ class APP {
 public:
     const std::string app_name = "Dota Helper";
     const std::wstring wide_app_name = std::wstring(app_name.begin(), app_name.end());
-    const float app_version = 1.1;
+    const float app_version = 1.2;
     const std::string app_full = createAppFull();
     const std::wstring wide_app_full = std::wstring(app_full.begin(), app_full.end());
 private:
