@@ -281,23 +281,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     } else {
                         if (abilities["ability4"]["name"] == "kez_raptor_dance") {
                             SetTextColor(hdc, RGB(220, 220, 255));
-                            RECT textRect_k1_cd = { horizontal / 2.33, vertical - 160 }; // Upper abilities (Q)
+                            //RECT textRect_k1_cd = { horizontal / 2.413, vertical - 160 }; // Upper abilities (Q) (OLD ONE)
+                            RECT textRect_k1_cd = { (horizontal / 2) - 165, vertical - 160 }; // Upper abilities (Q)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_falcon_rush"] - map_clock_time), 0)).c_str(), -1, &textRect_k1_cd, DT_NOCLIP);
-                            RECT textRect_k2_cd = { horizontal / 2.17, vertical - 160 }; // Upper abilities (W)
+                            //RECT textRect_k2_cd = { horizontal / 2.25, vertical - 160 }; // Upper abilities (W) (OLD ONE)
+                            RECT textRect_k2_cd = { (horizontal / 2) - 105, vertical - 160 }; // Upper abilities (W)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_talon_toss"] - map_clock_time), 0)).c_str(), -1, &textRect_k2_cd, DT_NOCLIP);
-                            RECT textRect_k3_cd = { horizontal / 2.04, vertical - 160 }; // Upper abilities (E)
+                            //RECT textRect_k3_cd = { horizontal / 2.109, vertical - 160 }; // Upper abilities (E) (OLD ONE)
+                            RECT textRect_k3_cd = { (horizontal / 2) - 50, vertical - 160 }; // Upper abilities (E)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_shodo_sai"] - map_clock_time), 0)).c_str(), -1, &textRect_k3_cd, DT_NOCLIP);
-                            RECT textRect_k4_cd = { horizontal / 1.82, vertical - 160 }; // Upper abilities (R)
+                            //RECT textRect_k4_cd = { horizontal / 1.762, vertical - 160 }; // Upper abilities (R) (OLD ONE)
+                            RECT textRect_k4_cd = { (horizontal / 2) + 125, vertical - 160 }; // Upper abilities (R)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_ravens_veil"] - map_clock_time), 0)).c_str(), -1, &textRect_k4_cd, DT_NOCLIP);
                         } else {
                             SetTextColor(hdc, RGB(204, 204, 0));
-                            RECT textRect_k1_cd = { horizontal / 2.33, vertical - 160 }; // Upper abilities (Q)
+                            RECT textRect_k1_cd = { (horizontal / 2) - 165, vertical - 160 }; // Upper abilities (Q)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_echo_slash"] - map_clock_time), 0)).c_str(), -1, &textRect_k1_cd, DT_NOCLIP);
-                            RECT textRect_k2_cd = { horizontal / 2.17, vertical - 160 }; // Upper abilities (W)
+                            RECT textRect_k2_cd = { (horizontal / 2) - 105, vertical - 160 }; // Upper abilities (W)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_grappling_claw"] - map_clock_time), 0)).c_str(), -1, &textRect_k2_cd, DT_NOCLIP);
-                            RECT textRect_k3_cd = { horizontal / 2.04, vertical - 160 }; // Upper abilities (E)
+                            RECT textRect_k3_cd = { (horizontal / 2) - 50, vertical - 160 }; // Upper abilities (E)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_kazurai_katana"] - map_clock_time), 0)).c_str(), -1, &textRect_k3_cd, DT_NOCLIP);
-                            RECT textRect_k4_cd = { horizontal / 1.82, vertical - 160 }; // Upper abilities (R)
+                            RECT textRect_k4_cd = { (horizontal / 2) + 125, vertical - 160 }; // Upper abilities (R)
                             DrawText(hdc, to_wstring(max((kez_skills_cooldown_list["kez_raptor_dance"] - map_clock_time), 0)).c_str(), -1, &textRect_k4_cd, DT_NOCLIP);
                         }
                     }
