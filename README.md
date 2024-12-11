@@ -55,8 +55,7 @@ More available [there](https://github.com/kuska1/DotaHelper/tree/master/Screensh
 ## 📬 Feedback
 
 If you have any feedback, please reach out to me using:
-- Mail: kusakaonelove@gmail.com
-- Telegram: https://t.me/Ym9nZGFu
+- Website: https://kuska1.github.io
 - Issues: https://github.com/kuska1/DotaHelper/issues
 
 ## 😸 Authors
