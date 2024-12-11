@@ -29,7 +29,7 @@ main {
 }
 @font-face {
     font-family: 'Radiance Regular';
-    src: url('res/radiance-regular.otf');
+    src: url('radiance-regular.otf');
 }
 @keyframes loadpage {
     0% {
