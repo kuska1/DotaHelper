@@ -46,7 +46,7 @@ Before starting Dota 2 and Dota Helper, make sure that you have the special [con
 ![Terrorblade Conjure Image Predict](https://github.com/kuska1/DotaHelper/blob/master/Screenshots/terrorblade.jpg)
 ![Invoker's Ability Cooldown](https://github.com/kuska1/DotaHelper/blob/master/Screenshots/invoker.jpg)
 ![Kez's Ability Cooldown](https://github.com/kuska1/DotaHelper/blob/master/Screenshots/kez.jpg)
-More available [there](https://github.com/kuska1/DotaHelper/tree/master/Screenshots).
+More available [there](https://github.com/kuska1/DotaHelper/tree/master/page-res).
 ## 📚 Used libraries
 
 - [nlohmann/json](https://github.com/nlohmann/json)
